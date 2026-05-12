@@ -138,10 +138,21 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     
     setIsSubmitting(true);
     
+    // Check if we should use redirect instead of popup
+    // Vercel and mobile browsers often prefer redirect to avoid popup blocking
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const shouldRedirect = isVercel || browserInfo.isMobile;
+
     try {
-      const result = await loginWithGoogle();
-      if (result) {
-        toast.success('เข้าสู่ระบบสำเร็จ');
+      if (shouldRedirect && !browserInfo.isEditor) {
+        toast.info('กำลังเปิดหน้าเข้าสู่ระบบแบบ Redirect...', { duration: 3000 });
+        await loginWithGoogleRedirect();
+        // The page will redirect, so no need to continue logic here
+      } else {
+        const result = await loginWithGoogle();
+        if (result) {
+          toast.success('เข้าสู่ระบบสำเร็จ');
+        }
       }
     } catch (error: any) {
       const isBlocked = error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user';

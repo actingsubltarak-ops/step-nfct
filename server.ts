@@ -293,4 +293,4 @@ async function startServer() {
 }
 
 // Export the app for Vercel
-export default startServer();
+export default startServer(); 

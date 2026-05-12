@@ -97,17 +97,30 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
       return;
     }
     setIsSubmitting(true);
+    console.log("Email Login: Attempting...", { email: email.toLowerCase().trim() });
     try {
       await loginWithEmail(email, password);
+      console.log("Email Login: Success");
       toast.success('เข้าสู่ระบบสำเร็จ');
     } catch (error: any) {
-      console.error(error);
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      console.error("Email Login: Failed", error);
+      const errorCode = error.code;
+      if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found') {
         toast.error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (errorCode === 'auth/too-many-requests') {
         toast.error('คุณพยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอกรณีครู่แล้วลองใหม่');
+      } else if (errorCode === 'auth/operation-not-allowed') {
+        toast.error('ระบบ Email Login ยังไม่ถูกเปิดใช้งาน', {
+          description: 'กรุณาไปที่ Firebase Console -> Authentication -> Sign-in method แล้วเปิดใช้งาน Email/Password ครับ'
+        });
+      } else if (errorCode === 'auth/network-error') {
+        toast.error('เกิดข้อผิดพลาดทางเครือข่าย', {
+          description: 'กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต และตรวจสอบว่าค่า VITE_FIREBASE_API_KEY ใน Vercel ถูกต้อง'
+        });
       } else {
-        toast.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
+        toast.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบ', {
+          description: `Error Code: ${errorCode}\nMessage: ${error.message || 'กรุณาลองใหม่อีกครั้ง'}`
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -143,7 +156,8 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
       hostname: window.location.hostname,
       isVercel: window.location.hostname.includes('vercel.app'),
       isEditor: browserInfo.isEditor,
-      isMobile: browserInfo.isMobile
+      isMobile: browserInfo.isMobile,
+      authConfigured: !!auth
     });
 
     setIsSubmitting(true);
@@ -152,11 +166,12 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     const timeout = setTimeout(() => {
       setIsSubmitting(false);
       console.warn("Google Login: Timeout reached, resetting isSubmitting");
-    }, 15000);
+    }, 10000);
 
     // Check if we should use redirect instead of popup
     // Vercel and mobile browsers often prefer redirect to avoid popup blocking
     const isVercel = window.location.hostname.includes('vercel.app');
+    // For Vercel, we almost ALWAYS want redirect because of cross-origin storage issues in popups
     const shouldRedirect = isVercel || browserInfo.isMobile;
 
     try {
@@ -177,20 +192,29 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     } catch (error: any) {
       clearTimeout(timeout);
       setIsSubmitting(false);
-      const isBlocked = error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user';
+      
+      const errorCode = error.code || 'unknown';
+      const errorMessage = error.message || 'Unknown error';
+      
+      console.error('Google Login Error:', { code: errorCode, message: errorMessage });
+      
+      const isBlocked = errorCode === 'auth/popup-blocked' || errorCode === 'auth/popup-closed-by-user';
       const isIframe = window.self !== window.top;
-      
-      console.error('Google Login Error:', error);
-      
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const is403 = error.message?.includes('403') || error.code?.includes('permission-denied') || error.message?.includes('network-error');
-      const isUnauthorizedDomain = error.code === 'auth/unauthorized-domain' || error.message?.includes('domain is not authorized');
-      const isStorage = error.message?.includes('storage') || error.message?.includes('cross-origin') || error.code === 'auth/internal-error';
+      const is403 = errorMessage.includes('403') || errorCode.includes('permission-denied') || errorMessage.includes('network-error');
+      const isUnauthorizedDomain = errorCode === 'auth/unauthorized-domain' || errorMessage.includes('domain is not authorized');
+      const isStorage = errorMessage.includes('storage') || errorMessage.includes('cross-origin') || errorCode === 'auth/internal-error';
 
-      if (isUnauthorizedDomain && isLocalhost) {
-        toast.error('Domain "localhost" ยังไม่ได้รับอนุญาต', {
-          description: 'กรุณาไปที่ Firebase Console -> Authentication -> Settings -> Authorized domains แล้วเพิ่ม "localhost" ลงไปครับ'
-        });
+      if (isUnauthorizedDomain) {
+        if (isLocalhost) {
+          toast.error('Domain "localhost" ยังไม่ได้รับอนุญาต', {
+            description: 'กรุณาไปที่ Firebase Console -> Authentication -> Settings -> Authorized domains แล้วเพิ่ม "localhost" ลงไปครับ'
+          });
+        } else {
+          toast.error('Domain นี้ยังไม่ได้รับอนุญาต', {
+            description: `กรุณาเพิ่ม "${window.location.hostname}" ใน Authorized Domains ของ Firebase Console ก่อนครับ`
+          });
+        }
       } else if (is403 && isIframe) {
         toast.error('Google ปฏิเสธการเชื่อมต่อ (403)', { 
           description: 'เกิดจากข้อจำกัดของ Google ใน Iframe กรุณากดปุ่ม "เปิดในเบราว์เซอร์" ด้านล่าง หรือปุ่มขวาบนของหน้า Preview เพื่อเข้าใช้งาน',
@@ -328,11 +352,11 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     }
     
     setIsSubmitting(true);
+    console.log("Registration: Start", { email: email.trim().toLowerCase(), role, department });
     try {
       console.log("Starting registration for:", email);
       const userCredential = await registerWithEmail(email, password);
-      const newUser = userCredential.user;
-      console.log("Auth user created:", newUser.uid);
+      console.log("Auth user created:", userCredential.user?.uid);
       
       // Prepare user data without null fields to avoid rules issues
       const userData: any = {
@@ -348,8 +372,9 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
         isManual: false
       };
 
-      await userService.createUser(newUser.uid, userData);
-      console.log("Firestore user document created");
+      console.log("Saving user profile to Firestore...");
+      await userService.createUser(userCredential.user.uid, userData);
+      console.log("Firestore user profile saved successfully");
       
       toast.success('ลงทะเบียนสำเร็จ กรุณารอผู้ดูแลระบบอนุมัติการใช้งาน');
       setIsRegistering(false);

@@ -27,19 +27,28 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID || firebaseAppConfig.projectId,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppConfig.storageBucket,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppConfig.appId
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppConfig.appId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseAppConfig.measurementId
 };
 
-// Validate config
-if (import.meta.env.DEV) {
-  const missingKeys = Object.entries(firebaseConfig)
-    .filter(([_, value]) => !value)
-    .map(([key]) => key);
+// Robust config logging for debugging deployment issues
+if (true) { // Always log in this case to help diagnosis
+  const mask = (s: string | undefined) => s ? `${s.substring(0, 5)}...${s.substring(s.length - 3)}` : 'MISSING';
   
-  if (missingKeys.length > 0) {
-    console.warn("⚠️ Firebase Configuration is incomplete!", {
-      missingKeys,
-      hint: "Check your .env file or firebase-applet-config.json"
+  // LOGGING - DO NOT REMOVE
+  console.log("🔥 Firebase Config Status:", {
+    apiKey: mask(firebaseConfig.apiKey),
+    projectId: firebaseConfig.projectId || 'MISSING',
+    authDomain: firebaseConfig.authDomain || 'MISSING',
+    databaseId: databaseId || 'default',
+    isVercel: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    source: import.meta.env.VITE_FIREBASE_PROJECT_ID ? 'Vercel/Env' : 'Config JSON'
+  });
+
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.error("❌ CRITICAL: Firebase Config is missing essential fields!", {
+      apiKeyFound: !!firebaseConfig.apiKey,
+      projectIdFound: !!firebaseConfig.projectId
     });
   }
 }

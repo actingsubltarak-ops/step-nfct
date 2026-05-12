@@ -64,6 +64,7 @@ async function startServer() {
           "'self'", 
           "*.googleapis.com", 
           "*.firebaseio.com", 
+          "*.firebaseapp.com",
           "https://securetoken.googleapis.com",
           "https://identitytoolkit.googleapis.com",
           "https://accounts.google.com",

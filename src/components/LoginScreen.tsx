@@ -134,10 +134,26 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
   };
 
   const handleGoogleLogin = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log("Google Login: Already submitting, ignoring click.");
+      return;
+    }
     
+    console.log("Google Login: Start", { 
+      hostname: window.location.hostname,
+      isVercel: window.location.hostname.includes('vercel.app'),
+      isEditor: browserInfo.isEditor,
+      isMobile: browserInfo.isMobile
+    });
+
     setIsSubmitting(true);
     
+    // Safety timeout: Reset submitting state if it takes too long
+    const timeout = setTimeout(() => {
+      setIsSubmitting(false);
+      console.warn("Google Login: Timeout reached, resetting isSubmitting");
+    }, 15000);
+
     // Check if we should use redirect instead of popup
     // Vercel and mobile browsers often prefer redirect to avoid popup blocking
     const isVercel = window.location.hostname.includes('vercel.app');
@@ -146,28 +162,30 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     try {
       if (shouldRedirect && !browserInfo.isEditor) {
         toast.info('กำลังเปิดหน้าเข้าสู่ระบบแบบ Redirect...', { duration: 3000 });
+        console.log("Google Login: Calling Redirect");
         await loginWithGoogleRedirect();
-        // The page will redirect, so no need to continue logic here
+        // The page will redirect, if it doesn't, the timeout will reset the state
       } else {
+        console.log("Google Login: Calling Popup");
         const result = await loginWithGoogle();
+        clearTimeout(timeout);
         if (result) {
           toast.success('เข้าสู่ระบบสำเร็จ');
         }
+        setIsSubmitting(false);
       }
     } catch (error: any) {
+      clearTimeout(timeout);
+      setIsSubmitting(false);
       const isBlocked = error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user';
       const isIframe = window.self !== window.top;
       
-      if (isBlocked) {
-        console.warn('Google Login Blocked:', error);
-      } else {
-        console.error('Google Login Error:', error);
-      }
+      console.error('Google Login Error:', error);
       
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const is403 = error.message?.includes('403') || error.code?.includes('permission-denied') || error.message?.includes('network-error');
       const isUnauthorizedDomain = error.code === 'auth/unauthorized-domain' || error.message?.includes('domain is not authorized');
-      const isStorage = error.message?.includes('storage') || error.message?.includes('cross-origin');
+      const isStorage = error.message?.includes('storage') || error.message?.includes('cross-origin') || error.code === 'auth/internal-error';
 
       if (isUnauthorizedDomain && isLocalhost) {
         toast.error('Domain "localhost" ยังไม่ได้รับอนุญาต', {
@@ -187,15 +205,14 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
           description: isIframe ? 'กรุณาอนุญาตให้เปิดป๊อปอัพ หรือ "เปิดในเบราว์เซอร์" ที่หน้าต่างใหม่' : 'กรุณาอนุญาตให้เปิดป๊อปอัพเพื่อเข้าสู่ระบบ'
         });
       } else if (isStorage) {
-        toast.error('ข้อจำกัดความปลอดภัยของเบราว์เซอร์', {
-          description: 'เบราว์เซอร์บล็อกการเข้าถึงข้อมูลข้ามไซต์ กรุณา "เปิดเข้าสู่ระบบในเบราว์เซอร์"'
+        toast.error('ข้อจำกัดความปลอดภัยของเบราว์เซอร์ (Incognito?)', {
+          description: 'เบราว์เซอร์บล็อกการเข้าถึงข้อมูลข้ามไซต์ มักเกิดขึ้นในโหมดไม่ระบุตัวตน กรุณาเปลี่ยนไปใช้การ "เข้าด้วยอีเมลและรหัสผ่าน" แทน หรืออนุญาตไฟล์คุกกี้บุคคลที่สาม'
         });
       } else if (error.code !== 'auth/cancelled-popup-request') {
         toast.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบ', { 
           description: error.message || 'กรุณาลองเข้าสู่ระบบในหน้าต่างใหม่' 
         });
       }
-      setIsSubmitting(false);
     }
   };
 

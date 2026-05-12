@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Backgrounds */
+  --bg-base:       #0e121e;   /* หน้าหลัก / app background (Deep Navy) */
+  --bg-surface:    #161c2e;   /* card, sidebar, modal */
+  --bg-elevated:   #1e253d;   /* dropdown, tooltip, hover */
+  --bg-input:      #0a0e1a;   /* input fields */
+
+  /* Borders */
+  --border-default: #222c45;
+  --border-subtle:  #161c2e;
+  --border-accent:  #2563eb;
+
+  /* Accents */
+  --accent-primary: #2563eb;   /* blue-600 */
+  --accent-glow:    rgba(37, 99, 235, 0.15);
+
+  /* Status */
+  --status-pending:   #f59e0b; /* amber-500 */
+  --status-progress:  #3b82f6; /* blue-500 */
+  --status-review:    #8b5cf6; /* violet-500 */
+  --status-complete:  #10b981; /* emerald-500 */
+  --status-hold:      #ef4444; /* red-500 */
+
+  /* Text */
+  --text-primary:   #ffffff;   /* white */
+  --text-secondary: #e2e8f0;   /* slate-200 */
+  --text-muted:     #cbd5e1;   /* slate-300 */
+  --text-dim:       #94a3b8;   /* slate-400 */
+
+  /* Font */
+  --font-main: 'Sarabun', 'Inter', sans-serif;
+}
+
+@theme {
+  --font-sans: var(--font-main);
+  --font-display: var(--font-main);
+  
+  --color-navy-base: var(--bg-base);
+  --color-navy-surface: var(--bg-surface);
+  --color-navy-elevated: var(--bg-elevated);
+  --color-navy-input: var(--bg-input);
+  
+  --color-border-navy: var(--border-default);
+  
+  --color-status-pending: var(--status-pending);
+  --color-status-progress: var(--status-progress);
+  --color-status-review: var(--status-review);
+  --color-status-complete: var(--status-complete);
+  --color-status-hold: var(--status-hold);
+
+  --color-brand-primary: var(--accent-primary);
+  --color-brand-secondary: #4f46e5;
+}
+
+@layer base {
+  body {
+    @apply bg-navy-base text-slate-100 antialiased selection:bg-brand-primary/20;
+    font-family: var(--font-main);
+    font-size: 18px;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans tracking-tight text-white font-bold;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-slate-200 shadow-sm;
+  }
+  
+  .glass-elevated {
+    @apply bg-white/90 backdrop-blur-2xl border border-slate-200 shadow-lg;
+  }
+
+  .card-premium {
+    @apply bg-white border border-slate-200 rounded-2xl transition-all duration-300 hover:border-slate-300 shadow-sm hover:shadow-md;
+  }
+  
+  .text-gradient {
+    @apply text-[#0f172a];
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-navy-base/50 rounded-full border border-white/5;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-brand-primary/20 rounded-full border border-brand-primary/20 hover:bg-brand-primary/40 transition-all;
+    box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    @apply bg-brand-primary/60;
+  }
+}
+
+.animate-in {
+  animation: animate-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }

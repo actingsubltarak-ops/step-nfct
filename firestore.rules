@@ -1,0 +1,290 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable) - Unique identifier for the user
+    //   - name: string (required, max 100 chars) - Full name of the user
+    //   - role: string (required, enum: ["Administrator", "Supervisor", "Staff"]) - User's role
+    //   - department: string (required, max 100 chars) - User's department
+    //   - email: string (required, format: email) - User's email address
+    //
+    // Collection: tasks
+    // Document ID: {taskId}
+    // Fields:
+    //   - id: string (required, immutable) - Unique identifier for the task
+    //   - title: string (required, max 200 chars) - Title of the task
+    //   - description: string (optional, max 2000 chars) - Detailed description
+    //   - status: string (required, enum: ["Pending", "In Progress", "Review", "Completed", "On Hold"]) - Current status
+    //   - project: string (required, max 100 chars) - Associated project name
+    //   - startDate: string (optional, format: date) - Start date
+    //   - endDate: string (optional, format: date) - Due date
+    //   - assigneeId: string (required) - UID of the user assigned to the task
+    //   - supervisorId: string (optional) - UID of the supervisor
+    //   - supervisorName: string (optional, max 100 chars) - Name of the supervisor
+    //   - ownerName: string (optional, max 100 chars) - Name of the task owner
+    //   - ownerDepartment: string (optional, max 100 chars) - Department of the task owner
+    //   - createdAt: timestamp (required, immutable) - When the task was created
+    //   - attachments: list (optional, max 10 items) - List of attachment objects {id, name, type, data, size}
+    //   - comments: list (optional, max 100 items) - List of comment objects {id, userId, userName, userAvatar, text, timestamp}
+    //   - activities: list (optional, max 200 items) - List of activity objects {id, type, description, userId, userName, timestamp}
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isActiveUser() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'Active';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isBootstrapAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email == 'actingsublt.arak@gmail.com' && 
+             request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          isBootstrapAdmin() ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator')
+        );
+    }
+
+    function isSupervisor() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Supervisor';
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidAttachment(attachment) {
+      return attachment is map &&
+             attachment.id is string &&
+             attachment.name is string &&
+             attachment.type is string &&
+             attachment.size is number;
+    }
+
+    function isValidComment(comment) {
+      return comment is map &&
+             comment.id is string &&
+             comment.userId is string &&
+             comment.userName is string &&
+             comment.text is string &&
+             comment.timestamp is string;
+    }
+
+    function isValidActivity(activity) {
+      return activity is map &&
+             activity.id is string &&
+             activity.type is string &&
+             activity.description is string &&
+             activity.userId is string &&
+             activity.userName is string &&
+             activity.timestamp is string;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      let allowedFields = ['uid', 'id', 'name', 'role', 'department', 'email', 'photoURL', 'avatar', 'isManual', 'updatedAt', 'createdAt', 'jobTitle', 'ownerId', 'status', 'lastActive', 'provider', 'fcmToken', 'displayName', 'position'];
+      let requiredFields = ['name', 'role', 'department'];
+
+      return data is map &&
+             data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.role in ['Administrator', 'Supervisor', 'Staff'] &&
+             data.department is string && data.department.size() > 0 &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             (!('jobTitle' in data) || (data.jobTitle is string && data.jobTitle.size() < 500)) &&
+             (!('position' in data) || (data.position is string && data.position.size() < 500)) &&
+             (!('ownerId' in data) || (data.ownerId is string)) &&
+             (!('status' in data) || data.status in ['Active', 'Inactive']) &&
+             (!('provider' in data) || data.provider in ['google', 'google.com', 'email', 'password', 'system']) &&
+             (!('lastActive' in data) || (data.lastActive is string || data.lastActive is timestamp)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string || data.updatedAt is timestamp)) &&
+             (!('createdAt' in data) || (data.createdAt is string || data.createdAt is timestamp));
+    }
+
+    function isValidTask(data) {
+      let allowedFields = ['id', 'title', 'description', 'status', 'project', 'startDate', 'endDate', 'assigneeId', 'assigneeIds', 'supervisorId', 'supervisorName', 'ownerName', 'ownerDepartment', 'createdAt', 'createdBy', 'updatedAt', 'attachments', 'comments', 'activities', 'subtasks', 'dependencies', 'budget', 'actualCost', 'kpiScore', 'qualityScore', 'aiPriority', 'aiPriorityReason', 'aiTags', 'aiCategory', 'aiSummary', 'delayProbability', 'completedAt', 'fcmToken']; 
+      let requiredFields = ['id', 'title', 'status', 'assigneeId', 'createdAt'];
+      let statuses = ['Pending', 'In Progress', 'Review', 'Completed', 'On Hold'];
+
+      return data is map &&
+             data.keys().hasAll(requiredFields) &&
+             data.id is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.status in statuses &&
+             data.assigneeId is string &&
+             (!('assigneeIds' in data) || data.assigneeIds is list) &&
+             (!('description' in data) || (data.description is string && data.description.size() < 5000)) &&
+             (data.createdAt is timestamp || isValidDateString(data.createdAt));
+    }
+
+    function isValidNotification(data) {
+      let allowedFields = ['id', 'userId', 'title', 'message', 'type', 'taskId', 'isRead', 'timestamp'];
+      let requiredFields = ['id', 'userId', 'title', 'message', 'type', 'isRead', 'timestamp'];
+
+      return data is map &&
+             data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.id is string &&
+             data.userId is string &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.isRead is bool &&
+             (data.timestamp is timestamp || isValidDateString(data.timestamp));
+    }
+
+    function isValidAuditLog(data) {
+      let allowedFields = ['id', 'userId', 'userName', 'action', 'details', 'targetId', 'targetType', 'timestamp', 'metadata', '_timestamp'];
+      let requiredFields = ['id', 'userId', 'userName', 'action', 'details', 'targetType', 'timestamp'];
+      
+      return data is map &&
+             data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.id is string &&
+             data.userId is string &&
+             data.userName is string &&
+             data.action is string &&
+             data.details is string &&
+             data.targetType in ["Task", "User", "Department", "System"] &&
+             isValidDateString(data.timestamp);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Allow get if authenticated OR if it's a manual profile (for registration auto-fill)
+      // This is safe because manual profiles are used specifically for matching during signup
+      allow get: if isAuthenticated() || 
+                   (resource.data.isManual == true) || 
+                   (resource.data.isManual == "true");
+      
+      // Allow list/query for manual profiles by email during signup
+      allow list: if (isAuthenticated() && (isActiveUser() || resource.data.email == request.auth.token.email)) ||
+                    (resource.data.isManual == true) || 
+                    (resource.data.isManual == "true");
+      
+      allow create: if (isAdmin() || isSupervisor()) || 
+                      (isOwner(userId) && 
+                       isValidUser(request.resource.data) && 
+                       request.resource.data.status == 'Inactive');
+      allow update: if isAuthenticated() && 
+                    (
+                      isAdmin() || 
+                      (isOwner(userId) && 
+                       isValidUser(request.resource.data) && 
+                       (
+                         // Allow role change if user is still Inactive (handles registration race condition)
+                         (resource.data.status == 'Inactive' && request.resource.data.status == 'Inactive') ||
+                         // If Active, cannot change role or status back to Inactive
+                         (resource.data.status == 'Active' && 
+                          request.resource.data.status == 'Active' && 
+                          request.resource.data.role == resource.data.role)
+                       ) &&
+                       // Prevent editing sensitive tokens unless explicit owner
+                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fcmToken']) || isOwner(userId))
+                      )
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isActiveUser();
+      allow create: if isAuthenticated() && isValidTask(request.resource.data) && (isAdmin() || isSupervisor() || request.resource.data.assigneeId == request.auth.uid);
+      allow update: if isAuthenticated() && isValidTask(request.resource.data) && 
+                    (
+                      isAdmin() || 
+                      (isSupervisor() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['kpiScore', 'qualityScore'])) ||
+                      (resource.data.assigneeId == request.auth.uid && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['kpiScore', 'qualityScore'])) ||
+                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator')
+                    );
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      }
+
+      match /activities/{activityId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /taskOwners/{ownerId} {
+      allow read: if true;
+      allow create, update: if isAdmin() || isSupervisor();
+      allow delete: if isAdmin();
+    }
+
+    match /departments/{deptId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin() || isSupervisor();
+      allow create: if isAuthenticated() && isValidAuditLog(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

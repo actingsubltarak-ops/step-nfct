@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique identifier for the user" },
+        "name": { "type": "string", "description": "Full name of the user" },
+        "role": { "type": "string", "enum": ["Administrator", "Supervisor", "Staff"], "description": "User's role in the organization" },
+        "department": { "type": "string", "description": "User's department" },
+        "email": { "type": "string", "format": "email", "description": "User's email address" },
+        "jobTitle": { "type": "string", "description": "User's job title" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"], "description": "User's account status" },
+        "lastActive": { "type": "string", "format": "date-time", "description": "Last activity timestamp" },
+        "photoURL": { "type": "string", "description": "URL to user's profile photo" }
+      },
+      "required": ["uid", "name", "role", "department"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Task or project information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the task" },
+        "title": { "type": "string", "description": "Title of the task" },
+        "description": { "type": "string", "description": "Detailed description of the task" },
+        "status": { "type": "string", "enum": ["Pending", "In Progress", "Review", "Completed", "On Hold"], "description": "Current status of the task" },
+        "project": { "type": "string", "description": "Associated project name" },
+        "startDate": { "type": "string", "format": "date", "description": "Start date of the task" },
+        "endDate": { "type": "string", "format": "date", "description": "Due date of the task" },
+        "assigneeId": { "type": "string", "description": "UID of the user assigned to the task" },
+        "supervisorId": { "type": "string", "description": "UID of the supervisor overseeing the task" },
+        "ownerName": { "type": "string", "description": "Name of the task owner/requester" },
+        "ownerDepartment": { "type": "string", "description": "Department of the task owner/requester" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the task was created" },
+        "createdBy": { "type": "string", "description": "UID of the user who created the task" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "When the task was last updated" },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "data": { "type": "string", "description": "Base64 encoded file data" },
+              "size": { "type": "number" }
+            }
+          }
+        },
+        "comments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "userId": { "type": "string" },
+              "userName": { "type": "string" },
+              "userAvatar": { "type": "string" },
+              "text": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["Status Change", "Update", "Comment", "Attachment", "Creation"] },
+              "description": { "type": "string" },
+              "userId": { "type": "string" },
+              "userName": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "completed": { "type": "boolean" }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of task IDs that this task depends on"
+        }
+      },
+      "required": ["id", "title", "status", "project", "assigneeId", "createdAt", "createdBy"]
+    },
+    "TaskOwner": {
+      "title": "TaskOwner",
+      "description": "Information about task owners/requesters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier" },
+        "name": { "type": "string", "description": "Full name of the owner" },
+        "departmentId": { "type": "string", "description": "ID of the associated department" }
+      },
+      "required": ["id", "name"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Information about departments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier" },
+        "name": { "type": "string", "description": "Name of the department" }
+      },
+      "required": ["id", "name"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["Task Assigned", "Status Change", "New Comment", "Deadline"] },
+        "taskId": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "isRead", "timestamp"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "System audit logs for tracking user actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["Task", "User", "Department", "System"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "userId", "userName", "action", "details", "targetType", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Collection of tasks"
+    },
+    "/taskOwners/{ownerId}": {
+      "schema": "TaskOwner",
+      "description": "Collection of task owners"
+    },
+    "/departments/{deptId}": {
+      "schema": "Department",
+      "description": "Collection of departments"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Collection of notifications"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Collection of system audit logs"
+    }
+  }
+}

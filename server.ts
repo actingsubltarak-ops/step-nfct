@@ -294,17 +294,8 @@ async function startServer() {
   return app;
 }
 
-// For AI Studio / Local / Cloud Run
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  startServer().then(app => {
-    // If we're not inside Vercel, the app needs to listen
-    // However, in production mode (Standard), the listen was already called inside startServer
-    // but only if it's not Vercel. 
-    // This part is mostly for local dev where NODE_ENV might be undefined.
-  });
-}
-
-// For Vercel (must export the promise or the app)
-// Vercel @vercel/node supports exporting a promise of an app.
+// Export the app for Vercel and AI Studio/Cloud Run
+// This will invoke startServer() once. Inside startServer(), 
+// it will only app.listen() if NOT running on Vercel.
 export default startServer();
 

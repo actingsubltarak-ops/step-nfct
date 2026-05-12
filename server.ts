@@ -36,8 +36,15 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Trust proxy for rate limiting (important on Cloud Run/GCP)
+// Trust proxy for rate limiting (important on Cloud Run/GCP)
   app.set('trust proxy', 1);
+
+  // Gemini API Key Protection - Server-side only
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey && process.env.NODE_ENV === "production" && !process.env.VERCEL) {
+    console.warn("WARNING: GEMINI_API_KEY is not defined in environment variables. AI endpoints will fail.");
+  }
+  const ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
 
   // Security Middlewares
   app.use(helmet({
@@ -118,6 +125,8 @@ async function startServer() {
   });
   app.use("/api/ai/", aiLimiter);
 
+  // Gemini is already initialized above
+
   // Authentication Middleware: Verifies Firebase ID Token
   const authenticate = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers.authorization;
@@ -135,13 +144,6 @@ async function startServer() {
       res.status(401).json({ error: "Unauthorized: Token verification failed" });
     }
   };
-
-  // Gemini API Key Protection - Server-side only
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("WARNING: GEMINI_API_KEY is not defined in environment variables.");
-  }
-  const ai = new GoogleGenAI({ apiKey: apiKey || "" });
 
   // Apply authentication to all AI routes
   app.use("/api/ai", authenticate);
@@ -292,6 +294,17 @@ async function startServer() {
   return app;
 }
 
-// Export the app for Vercel
+// For AI Studio / Local / Cloud Run
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  startServer().then(app => {
+    // If we're not inside Vercel, the app needs to listen
+    // However, in production mode (Standard), the listen was already called inside startServer
+    // but only if it's not Vercel. 
+    // This part is mostly for local dev where NODE_ENV might be undefined.
+  });
+}
+
+// For Vercel (must export the promise or the app)
+// Vercel @vercel/node supports exporting a promise of an app.
 export default startServer();
 

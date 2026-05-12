@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, LogIn, User, Briefcase, Building2, Shield, Loader2, ChevronRight, ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import { cn, getRoleDisplayName } from '../lib/utils';
 import { toast } from 'sonner';
-import { loginWithEmail, loginWithGoogle, loginWithGoogleRedirect, registerWithEmail, resetPassword, Timestamp, db } from '../firebase';
+import { auth, loginWithEmail, loginWithGoogle, loginWithGoogleRedirect, registerWithEmail, resetPassword, Timestamp, db } from '../firebase';
 import { userService } from '../services/userService';
 import { doc, getDoc, collection, query, where, getDocs, limit, getCountFromServer } from 'firebase/firestore';
 
@@ -195,14 +195,15 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
       const errorCode = error.code || 'unknown';
       const errorMessage = error.message || 'Unknown error';
       
-      console.error('Google Login Error:', { code: errorCode, message: errorMessage });
+      console.error('Google Login Error Details:', error);
+      console.error('Google Login Error Summary:', { code: errorCode, message: errorMessage });
       
       const isBlocked = errorCode === 'auth/popup-blocked' || errorCode === 'auth/popup-closed-by-user';
       const isIframe = window.self !== window.top;
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const is403 = errorMessage.includes('403') || errorCode.includes('permission-denied') || errorMessage.includes('network-error');
       const isUnauthorizedDomain = errorCode === 'auth/unauthorized-domain' || errorMessage.includes('domain is not authorized');
-      const isStorage = errorMessage.includes('storage') || errorMessage.includes('cross-origin') || errorCode === 'auth/internal-error';
+      const isStorage = errorMessage.includes('storage') || errorMessage.includes('cross-origin') || (errorCode === 'auth/internal-error' && errorMessage.toLowerCase().includes('storage'));
 
       if (isUnauthorizedDomain) {
         if (isLocalhost) {

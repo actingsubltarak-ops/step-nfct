@@ -265,10 +265,28 @@ async function startServer() {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } else {
-    // On Vercel (Production), we don't listen on a port in the traditional way 
-    // for serverless functions, and we don't serve static files from Express 
-    // because vercel.json handles it more efficiently.
-    console.log("[Server] Production mode: API Only (Vercel will handle static files)");
+    // Production Mode
+    if (process.env.VERCEL) {
+      console.log("[Server] Production mode (Vercel): API Only (Static files handled by Vercel)");
+    } else {
+      // Standard Production (e.g., Cloud Run / AI Studio)
+      const distPath = path.join(process.cwd(), "dist");
+      console.log(`[Server] Production mode (Standard): Serving from ${distPath}`);
+      
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        const indexPath = path.join(distPath, "index.html");
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(404).send("Build artifacts not found. Please run 'npm run build' first.");
+        }
+      });
+
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
+    }
   }
 
   return app;

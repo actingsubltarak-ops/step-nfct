@@ -156,8 +156,7 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
       hostname: window.location.hostname,
       isVercel: window.location.hostname.includes('vercel.app'),
       isEditor: browserInfo.isEditor,
-      isMobile: browserInfo.isMobile,
-      authConfigured: !!auth
+      isMobile: browserInfo.isMobile
     });
 
     setIsSubmitting(true);
@@ -171,8 +170,8 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
     // Check if we should use redirect instead of popup
     // Vercel and mobile browsers often prefer redirect to avoid popup blocking
     const isVercel = window.location.hostname.includes('vercel.app');
-    // For Vercel, we almost ALWAYS want redirect because of cross-origin storage issues in popups
-    const shouldRedirect = isVercel || browserInfo.isMobile;
+    // Based on analysis, Popup works better on Vercel to avoid cross-origin cookie issues with Redirect
+    const shouldRedirect = browserInfo.isMobile && !isVercel;
 
     try {
       if (shouldRedirect && !browserInfo.isEditor) {

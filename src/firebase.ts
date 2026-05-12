@@ -50,15 +50,14 @@ if (true) { // Always log in this case to help diagnosis
     projectId: firebaseConfig.projectId || 'MISSING',
     authDomain: firebaseConfig.authDomain || 'MISSING',
     databaseId: databaseId || 'default',
+    origin: window.location.origin,
+    hostname: window.location.hostname,
     isVercel: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
     source: import.meta.env.VITE_FIREBASE_PROJECT_ID ? 'Vercel/Env' : 'Config JSON'
   });
 
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.error("❌ CRITICAL: Firebase Config is missing essential fields!", {
-      apiKeyFound: !!firebaseConfig.apiKey,
-      projectIdFound: !!firebaseConfig.projectId
-    });
+    console.error("❌ CRITICAL: Firebase Config is missing essential fields!");
   }
 }
 

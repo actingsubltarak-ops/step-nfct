@@ -31,6 +31,15 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseAppConfig.measurementId
 };
 
+// Get Database ID with robust fallback
+const getDbId = () => {
+  const envId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+  if (envId && envId !== 'default' && envId !== '(default)') return envId;
+  return firebaseAppConfig.firestoreDatabaseId;
+};
+
+const databaseId = getDbId();
+
 // Robust config logging for debugging deployment issues
 if (true) { // Always log in this case to help diagnosis
   const mask = (s: string | undefined) => s ? `${s.substring(0, 5)}...${s.substring(s.length - 3)}` : 'MISSING';
@@ -52,15 +61,6 @@ if (true) { // Always log in this case to help diagnosis
     });
   }
 }
-
-// Get Database ID with robust fallback
-const getDbId = () => {
-  const envId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
-  if (envId && envId !== 'default' && envId !== '(default)') return envId;
-  return firebaseAppConfig.firestoreDatabaseId;
-};
-
-const databaseId = getDbId();
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, databaseId);

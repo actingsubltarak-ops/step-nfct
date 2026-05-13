@@ -1,5 +1,14 @@
 import { Task, Comment, TeamMember } from "../types";
-import { getIdToken } from "../firebase";
+import { GoogleGenAI, Type } from "@google/genai";
+
+// Initialize Gemini on the frontend as per AI Studio guidelines
+// process.env.GEMINI_API_KEY is automatically handled by the platform
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "dummy_key" });
+
+const MODELS = {
+  flash: "gemini-3-flash-preview",
+  pro: "gemini-3.1-pro-preview"
+};
 
 export async function summarizeComments(comments: Comment[]) {
   if (!comments || comments.length === 0) return "ไม่มีความคิดเห็นให้สรุป";
@@ -9,19 +18,15 @@ export async function summarizeComments(comments: Comment[]) {
     .join("\n");
 
   try {
-    const token = await getIdToken();
-    const response = await fetch("/api/ai/summarize", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ commentsText }),
+    const response = await ai.models.generateContent({
+      model: MODELS.flash,
+      contents: `สรุปเนื้อหาการพูดคุยต่อไปนี้ให้สั้น กระชับ และได้ใจความสำคัญสำหรับผู้บริหาร (ภาษาไทย):\n\n${commentsText}`,
+      config: {
+        systemInstruction: "คุณคือผู้ช่วยบริหารที่เก่งในการสรุปประเด็นสำคัญจากการสนทนาในทีมงาน",
+      }
     });
-
-    if (!response.ok) throw new Error("API responded with error");
-    const data = await response.json();
-    return data.text || "ไม่สามารถสรุปได้ในขณะนี้";
+    
+    return response.text || "ไม่สามารถสรุปได้ในขณะนี้";
   } catch (error) {
     console.error("Gemini Summarization Error:", error);
     return "เกิดข้อผิดพลาดในการสรุปเนื้อหา";
@@ -42,18 +47,26 @@ export async function analyzeTaskPriorityAndTags(task: Partial<Task>) {
 3. หมวดหมู่ (Category): หมวดหมู่ที่เหมาะสมที่สุดสำหรับงานนี้`;
 
   try {
-    const token = await getIdToken();
-    const response = await fetch("/api/ai/analyze-priority", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ prompt }),
+    const response = await ai.models.generateContent({
+      model: MODELS.flash,
+      contents: prompt,
+      config: {
+        systemInstruction: "คุณคือผู้เชี่ยวชาญด้านการบริหารจัดการโครงการ (Project Management Expert) ที่ช่วยวิเคราะห์และจัดลำดับความสำคัญของงาน",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            priority: { type: Type.STRING },
+            reason: { type: Type.STRING },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            category: { type: Type.STRING }
+          },
+          required: ["priority", "reason", "tags", "category"]
+        }
+      }
     });
 
-    if (!response.ok) throw new Error("API responded with error");
-    return await response.json();
+    return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
     return null;
@@ -85,20 +98,41 @@ export async function predictProjectDelay(task: Task, teamMember: TeamMember | u
   `;
 
   try {
-    const token = await getIdToken();
-    const response = await fetch("/api/ai/predict-delay", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ prompt }),
+    const response = await ai.models.generateContent({
+      model: MODELS.flash,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            probability: { type: Type.NUMBER },
+            reason: { type: Type.STRING }
+          },
+          required: ["probability", "reason"]
+        }
+      }
     });
-
-    if (!response.ok) throw new Error("API responded with error");
-    return await response.json();
+    
+    return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error("Predict Delay Error:", error);
     return null;
+  }
+}
+
+export async function generateGenericInsight(prompt: string) {
+  try {
+    const response = await ai.models.generateContent({
+      model: MODELS.flash,
+      contents: prompt,
+      config: {
+        systemInstruction: "คุณคือผู้เชี่ยวชาญด้านการบริหารจัดการโครงการ (Project Management Expert) ที่ช่วยวิเคราะห์ข้อมูลระดับองค์กร"
+      }
+    });
+    return response.text || "ไม่สามารถสร้างข้อมูลเชิงลึกได้ในขณะนี้";
+  } catch (error: any) {
+    console.error("Generic AI Error:", error);
+    throw error;
   }
 }

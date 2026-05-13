@@ -10,7 +10,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { getIdToken } from '../firebase';
+import { generateGenericInsight } from '../services/geminiService';
 
 interface AIInsightsProps {
   tasks: Task[];
@@ -44,25 +44,17 @@ export function AIInsights({ tasks, teamMembers }: AIInsightsProps) {
         ตอบเป็นภาษาไทย โดยใช้รูปแบบ Markdown ที่สวยงามและอ่านง่าย
       `;
 
-      const token = await getIdToken();
-      const response = await fetch("/api/ai/generic", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          prompt,
-          systemInstruction: "คุณคือผู้เชี่ยวชาญด้านการบริหารจัดการโครงการที่วิเคราะห์ข้อมูลระดับองค์กร"
-        }),
-      });
-
-      if (!response.ok) throw new Error("API responded with error");
-      const data = await response.json();
-      setInsight(data.text || "ไม่สามารถสร้างข้อมูลเชิงลึกได้ในขณะนี้");
-    } catch (error) {
+      const resultText = await generateGenericInsight(prompt);
+      setInsight(resultText);
+    } catch (error: any) {
       console.error("AI Insight Error:", error);
-      setInsight("เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง");
+      if (error.message?.includes("API key not valid") || error.message?.includes("invalid key")) {
+        setInsight("เกิดข้อผิดพลาด: API Key ไม่ถูกต้อง หรือไม่ได้ตั้งค่า API Key ในส่วนของ Secrets (Settings > Secrets)");
+      } else if (error.message?.includes("safety") || error.message?.includes("blocked")) {
+        setInsight("เนื้อหาถูกระงับโดยระบบความปลอดภัยของ AI กรุณาลองปรับปรุงข้อมูล");
+      } else {
+        setInsight("เกิดข้อผิดพลาดในการประมวลผลด้วย AI กรุณาลองใหม่อีกครั้ง หรือตรวจสอบการตั้งค่า API Key ของคุณ");
+      }
     } finally {
       setLoading(false);
     }

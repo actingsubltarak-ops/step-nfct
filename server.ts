@@ -232,9 +232,10 @@ async function startServer() {
   app.post("/api/ai/generic", async (req, res) => {
     const { prompt } = req.body;
     
-    // Security Fix: Proper validation and return on failure
-    if (!prompt || typeof prompt !== 'string' || prompt.length > 2000) {
-      return res.status(400).json({ error: "Invalid input. Prompt must be a string between 1 and 2000 characters." });
+    // Security Fix: Increased limit to 15,000 to accommodate project data
+    if (!prompt || typeof prompt !== 'string' || prompt.length > 15000) {
+      console.warn(`[AI] Rejected prompt: length ${prompt?.length || 0}`);
+      return res.status(400).json({ error: "Invalid input. Prompt must be a string between 1 and 15000 characters." });
     }
 
     try {
@@ -242,13 +243,17 @@ async function startServer() {
         model: "gemini-2.0-flash",
         contents: prompt,
         config: {
-          systemInstruction: "คุณคือผู้ช่วยอัจฉริยะที่ช่วยจัดการงานในระบบ IT Task Tracking System"
+          systemInstruction: "คุณคือผู้เชี่ยวชาญด้านการบริหารจัดการโครงการ (Project Management Expert) ที่ช่วยวิเคราะห์ข้อมูลระดับองค์กร"
         }
       });
       res.json({ text: response.text });
     } catch (error: any) {
       console.error("Generic AI API Error:", error);
-      res.status(500).json({ error: "AI processing failed" });
+      // Pass more specific error message if possible for easier debugging
+      const errorMessage = error?.message?.includes("API key not valid") 
+        ? "Invalid Gemini API Key" 
+        : "AI processing failed";
+      res.status(500).json({ error: errorMessage });
     }
   });
 

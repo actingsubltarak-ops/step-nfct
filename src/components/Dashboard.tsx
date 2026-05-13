@@ -42,7 +42,7 @@ function GaugeMeter({ value, color, label }: { value: number, color: string, lab
   const needleAngle = (displayValue / 100) * 180 - 90;
 
   return (
-    <div className="relative w-full h-32 flex flex-col items-center justify-center">
+    <div className="relative w-full h-32 flex flex-col items-center justify-center group">
       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
         <RechartsPieChart>
           <defs>
@@ -88,7 +88,14 @@ function GaugeMeter({ value, color, label }: { value: number, color: string, lab
 
       {/* Label outside the meter */}
       <div className="absolute -bottom-6 flex flex-col items-center">
-        <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{label}</span>
+        <span 
+          className="text-sm font-black text-white uppercase tracking-widest transition-colors duration-300"
+          style={{ '--hover-color': color } as any}
+          onMouseEnter={(e) => e.currentTarget.style.color = color}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#ffffff'}
+        >
+          {label}
+        </span>
       </div>
     </div>
   );
@@ -559,15 +566,15 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600, angle: -30, textAnchor: 'end' }} 
-                    height={60}
+                    tick={{ fontSize: 14, fill: '#ffffff', fontWeight: 800, angle: -30, textAnchor: 'end' }} 
+                    height={80}
                     interval={0}
                   />
                   <YAxis 
                     yAxisId="left"
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 10, fill: '#64748b' }} 
+                    tick={{ fontSize: 14, fill: '#ffffff', fontWeight: 700 }} 
                     tickFormatter={(v) => `${Math.round(v * 100)}%`}
                   />
                   <YAxis 
@@ -575,18 +582,18 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                     orientation="right"
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 10, fill: '#64748b' }} 
+                    tick={{ fontSize: 14, fill: '#ffffff', fontWeight: 700 }} 
                   />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: '#0f172a',
                       border: '1px solid #1e293b',
                       borderRadius: '12px',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       fontWeight: 'bold',
-                      color: '#f1f5f9',
+                      color: '#ffffff',
                     }}
-                    labelStyle={{ color: '#94a3b8', marginBottom: 4 }}
+                    labelStyle={{ color: '#ffffff', marginBottom: 4, fontSize: '15px' }}
                     cursor={{ fill: 'rgba(99,102,241,0.1)' }}
                     labelFormatter={(label, payload) => {
                       if (payload && payload.length > 0) {
@@ -599,7 +606,16 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                       return [`${Math.round(value * 100)}%`, name];
                     }}
                   />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8' }} />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={48} 
+                    wrapperStyle={{ 
+                      fontSize: '14px', 
+                      fontWeight: '900', 
+                      color: '#ffffff',
+                      paddingBottom: '20px'
+                    }} 
+                  />
                   <Bar yAxisId="right" dataKey="count" name="จำนวนงาน" fill="#6366f1" radius={[8, 8, 0, 0]} barSize={25} />
                   <Bar yAxisId="left" dataKey="kpi" name="KPI Score (%)" fill="#10b981" radius={[8, 8, 0, 0]} barSize={25} />
                   <Bar yAxisId="left" dataKey="quality" name="Quality Score (%)" fill="#ff00ff" radius={[8, 8, 0, 0]} barSize={25} />
@@ -652,7 +668,7 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                       { name: 'กำลังดำเนินการ', value: statusCounts['In Progress'], color: '#3b82f6' },
                       { name: 'เสร็จสิ้นแล้ว', value: statusCounts['Completed'], color: '#10b981' }
                     ]}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    margin={{ top: 50, right: 30, left: 20, bottom: 20 }}
                     barGap={40}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -660,13 +676,14 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 14, fontWeight: 800 }} 
+                      tick={{ fill: '#ffffff', fontSize: 16, fontWeight: 800 }} 
                       dy={10}
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 13, fontWeight: 800 }} 
+                      tick={{ fill: '#ffffff', fontSize: 18, fontWeight: 900 }} 
+                      domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.2)]}
                     />
                     <Tooltip 
                       cursor={{ fill: 'rgba(255,255,255,0.03)' }}
@@ -773,32 +790,48 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                   <User size={20} />
                 </div>
               </div>
-              <div className="h-[400px] min-h-[400px] w-full">
+              <div className="h-[450px] min-h-[450px] w-full">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
-                  <BarChart data={workloadData} layout="vertical" margin={{ left: 40, right: 40 }}>
+                  <BarChart data={workloadData} layout="vertical" margin={{ left: 10, right: 180, top: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(255,255,255,0.05)" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: '#ffffff', fontWeight: 'bold' }} width={120} />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ 
+                        fontSize: 14, 
+                        fill: '#ffffff', 
+                        fontWeight: '900',
+                        textAnchor: 'end'
+                      }} 
+                      width={160}
+                    />
                     <Tooltip 
+                      cursor={{ fill: 'rgba(255, 255, 255, 0.08)' }}
                       contentStyle={{ 
                         backgroundColor: '#0f172a', 
                         border: '1px solid #1e293b', 
                         borderRadius: '16px', 
                         color: '#fff',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '14px'
                       }} 
                       itemStyle={{ fontWeight: 'bold' }}
+                      labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px' }}
                       formatter={(value: any, name: string) => {
                         if (name === "active") return [value, "งานที่กำลังทำ"];
                         if (name === "completed") return [value, "งานที่เสร็จสิ้น"];
                         return [value, name];
                       }}
                     />
-                    <Bar dataKey="active" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24} name="active">
+                    <Bar dataKey="active" fill="#6366f1" radius={[0, 12, 12, 0]} barSize={28} name="active">
                       <LabelList
                         dataKey="active"
                         position="right"
-                        style={{ fill: '#ffffff', fontSize: 13, fontWeight: 900 }}
+                        offset={15}
+                        style={{ fill: '#ffffff', fontSize: 16, fontWeight: 900 }}
                         formatter={(v: number) => v > 0 ? v : ''}
                       />
                     </Bar>
@@ -858,8 +891,8 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                   <BarChart data={financialData} margin={{ top: 20, right: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} tickFormatter={(v) => v === 'Budget' ? 'งบประมาณ' : 'ค่าใช้จ่ายจริง'} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: '#ffffff', fontWeight: '900' }} tickFormatter={(v) => v === 'Budget' ? 'งบประมาณ' : 'ค่าใช้จ่ายจริง'} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 16, fill: '#ffffff', fontWeight: '900' }} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
                       formatter={(value: number) => [`฿${value.toLocaleString()}`, 'จำนวนเงิน']}
@@ -921,10 +954,12 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
 }
 
 function StatusCard({ label, value, color }: { label: string, value: number, color: string }) {
+  const textColorClass = color.split(' ').find(c => c.startsWith('text-')) || '';
+  
   return (
-    <div className={cn("p-10 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center gap-6 transition-all hover:scale-105 shadow-2xl bg-navy-surface/50 backdrop-blur-xl relative overflow-hidden group", color.replace('bg-', 'text-'))}>
-      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-current transition-colors leading-none">{label}</p>
-      <p className="text-8xl font-black tracking-tighter drop-shadow-[0_4px_30px_rgba(255,255,255,0.1)] text-white group-hover:scale-110 transition-transform leading-none">{value}</p>
+    <div className={cn("p-10 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center gap-6 transition-all hover:scale-105 shadow-2xl bg-navy-surface/50 backdrop-blur-xl relative overflow-hidden group", textColorClass)}>
+      <p className="text-sm font-black uppercase tracking-widest text-white transition-colors leading-none group-hover:text-current">{label}</p>
+      <p className="text-8xl font-black tracking-tighter drop-shadow-[0_4px_30px_rgba(255,255,255,0.1)] text-white group-hover:scale-110 transition-transform leading-none group-hover:text-current">{value}</p>
       <div className={cn("absolute bottom-0 left-0 right-0 h-1.5 opacity-30", color)} />
     </div>
   );
@@ -947,8 +982,14 @@ function StatCard({
   children?: React.ReactNode,
   trendIndicator?: React.ReactNode
 }) {
+  const match = color.match(/\[(#[a-fA-F0-9]+)\]/);
+  const themeColor = match ? match[1] : 'inherit';
+
   return (
-    <div className="bg-[#0c0f1a]/80 backdrop-blur-xl p-10 rounded-[3rem] border border-white/15 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col gap-8 hover:border-brand-primary/50 transition-all group relative overflow-hidden">
+    <div 
+      className="bg-[#0c0f1a]/80 backdrop-blur-xl p-10 rounded-[3rem] border border-white/15 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col gap-8 hover:border-brand-primary/50 transition-all group relative overflow-hidden"
+      style={{ '--stat-color': themeColor } as any}
+    >
       <div className="flex items-center justify-between relative z-10 w-full mb-2">
         <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center border shadow-xl transition-all group-hover:scale-110 group-hover:-rotate-3 duration-500", color)}>
           <div className="scale-125 drop-shadow-lg">
@@ -965,8 +1006,8 @@ function StatCard({
         </div>
       </div>
       <div className="relative z-10 flex flex-col items-center xl:items-start">
-        <p className="text-sm text-slate-500 font-black uppercase tracking-[0.3em] mb-4 text-center xl:text-left">{label}</p>
-        <div className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_4px_30px_rgba(255,255,255,0.15)] leading-none mb-6 flex items-baseline justify-center xl:justify-start gap-2 group-hover:scale-105 transition-transform duration-700">
+        <p className="text-base text-white font-black uppercase tracking-widest mb-4 text-center xl:text-left transition-colors duration-300 group-hover:text-[var(--stat-color)]">{label}</p>
+        <div className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_4px_30px_rgba(255,255,255,0.15)] leading-none mb-6 flex items-baseline justify-center xl:justify-start gap-2 group-hover:scale-105 transition-all duration-700 group-hover:text-[var(--stat-color)]">
           {String(value).includes('%') ? (
             <>
               <span>{String(value).replace('%', '')}</span>

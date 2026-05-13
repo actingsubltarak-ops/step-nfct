@@ -1106,13 +1106,13 @@ export function Calendar({ tasks, teamMembers, taskOwners, departments, userProf
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">ผลการดำเนินงาน</label>
+                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">โครงการ/งานที่รับผิดชอบ</label>
                 <input 
                   type="text" 
                   value={project}
                   onChange={(e) => setProject(e.target.value)}
                   className="w-full bg-[#09090b] border border-[#27272a] rounded-2xl p-4 text-white outline-none focus:border-blue-500 transition-all placeholder:text-[#3f3f46]"
-                  placeholder="ระบุผลการดำเนินงาน..."
+                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
                   required
                 />
               </div>

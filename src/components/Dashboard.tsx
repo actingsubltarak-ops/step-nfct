@@ -199,6 +199,7 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
 
     // Overdue tasks
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const overdueTasks = filteredTasks.filter(t =>
       t.status !== 'Completed' && t.endDate && new Date(t.endDate) < today
     ).length;
@@ -228,41 +229,55 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
 
   const COLORS = React.useMemo(() => pieData.length > 0 ? pieData.map(d => d.color) : ['#3b82f6'], [pieData]);
 
-  const projectData = React.useMemo(() => Array.from(new Set(filteredTasks.map(t => t.project || 'ไม่ระบุโครงการ'))).map(projectName => {
-    const projectTasks = filteredTasks.filter(t => (t.project || 'ไม่ระบุโครงการ') === projectName);
-    const avgKpi = projectTasks.length > 0 ? Math.round(projectTasks.reduce((sum, t) => sum + (t.kpiScore || 0), 0) / projectTasks.length) : 0;
-    const avgQuality = projectTasks.length > 0 ? Math.round(projectTasks.reduce((sum, t) => sum + (t.qualityScore || 0), 0) / projectTasks.length) : 0;
-    return {
-      name: projectName,
-      count: projectTasks.length,
-      kpi: avgKpi,
-      quality: avgQuality
-    };
-  }), [filteredTasks]);
+  const projectData = React.useMemo(() => {
+    // Change grouping from project to title (งาน/กิจกรรม/โครงการ)
+    const projectNames = Array.from(new Set(filteredTasks.map(t => t.title || 'ไม่ระบุชื่อภารกิจ')));
+    const data = projectNames.map(projectName => {
+      const projectTasks = filteredTasks.filter(t => (t.title || 'ไม่ระบุชื่อภารกิจ') === projectName);
+      
+      // Accuracy Fix: Only average scores for tasks that actually HAVE scores
+      const kpiTasks = projectTasks.filter(t => t.kpiScore !== undefined && typeof t.kpiScore === 'number');
+      const qualityTasks = projectTasks.filter(t => t.qualityScore !== undefined && typeof t.qualityScore === 'number');
+      
+      const avgKpi = kpiTasks.length > 0 
+        ? Math.round(kpiTasks.reduce((sum, t) => sum + (t.kpiScore || 0), 0) / kpiTasks.length) 
+        : 0;
+        
+      const avgQuality = qualityTasks.length > 0 
+        ? Math.round(qualityTasks.reduce((sum, t) => sum + (t.qualityScore || 0), 0) / qualityTasks.length) 
+        : 0;
+
+      return {
+        name: projectName,
+        count: projectTasks.length,
+        kpi: avgKpi,
+        quality: avgQuality
+      };
+    });
+    // Sort by count or name to make it consistent
+    return data.sort((a, b) => b.count - a.count);
+  }, [filteredTasks]);
 
   const chartData = React.useMemo(() => {
-    const byProject: Record<string, { scores: number[], count: number }> = {};
-    filteredTasks.forEach(t => {
-      const key = t.project || 'ไม่ระบุโครงการ';
-      if (!byProject[key]) byProject[key] = { scores: [], count: 0 };
-      byProject[key].count++;
-      if (t.kpiScore !== undefined && typeof t.kpiScore === 'number' && !isNaN(t.kpiScore)) {
-        byProject[key].scores.push(t.kpiScore);
-      }
-    });
-    return Object.entries(byProject).map(([name, data]) => ({
-      name: name.length > 12 ? name.substring(0, 12) + '…' : name,
-      kpi: data.scores.length > 0
-        ? (data.scores.reduce((a, b) => a + b, 0) / data.scores.length) / 100
-        : 0,
-      count: data.count,
+    return projectData.map(p => ({
+      name: p.name.length > 15 ? p.name.substring(0, 15) + '…' : p.name,
+      fullName: p.name,
+      kpi: p.kpi / 100,
+      quality: p.quality / 100,
+      count: p.count,
     }));
-  }, [filteredTasks]);
+  }, [projectData]);
 
   // Workload Heatmap Data
   const workloadData = React.useMemo(() => teamMembers.map(member => {
-    const activeTasks = filteredTasks.filter(t => t.assigneeId === member.id && t.status !== 'Completed').length;
-    const completedTasks = filteredTasks.filter(t => t.assigneeId === member.id && t.status === 'Completed').length;
+    const activeTasks = filteredTasks.filter(t => 
+      (t.assigneeId === member.id || (t.assigneeIds && t.assigneeIds.includes(member.id))) && 
+      t.status !== 'Completed'
+    ).length;
+    const completedTasks = filteredTasks.filter(t => 
+      (t.assigneeId === member.id || (t.assigneeIds && t.assigneeIds.includes(member.id))) && 
+      t.status === 'Completed'
+    ).length;
     return {
       name: member.name,
       active: activeTasks,
@@ -524,8 +539,8 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
           <div className="bg-navy-surface p-10 rounded-[3rem] border border-border-navy shadow-2xl shadow-black/50">
             <div className="flex items-center justify-between mb-10">
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">ผลการวิเคราะห์รายโครงการ</h3>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">KPI Score เฉลี่ยแยกตามโครงการ</p>
+                <h3 className="text-xl font-bold text-white tracking-tight">ผลการวิเคราะห์รายภารกิจ/โครงการ</h3>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">เปรียบเทียบ KPI และ Quality Score แยกตามงาน/กิจกรรม/โครงการ</p>
               </div>
             </div>
               <div className="h-[400px] min-h-[400px] w-full">
@@ -536,8 +551,9 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} 
-                    dy={10} 
+                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600, angle: -30, textAnchor: 'end' }} 
+                    height={60}
+                    interval={0}
                   />
                   <YAxis 
                     yAxisId="left"
@@ -564,12 +580,28 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                     }}
                     labelStyle={{ color: '#94a3b8', marginBottom: 4 }}
                     cursor={{ fill: 'rgba(99,102,241,0.1)' }}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0) {
+                        return payload[0].payload.fullName || label;
+                      }
+                      return label;
+                    }}
+                    formatter={(value: any, name: string) => {
+                      if (name === "จำนวนงาน") return [value, name];
+                      return [`${Math.round(value * 100)}%`, name];
+                    }}
                   />
                   <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8' }} />
                   <Bar yAxisId="right" dataKey="count" name="จำนวนงาน" fill="#6366f1" radius={[8, 8, 0, 0]} barSize={25} />
                   <Bar yAxisId="left" dataKey="kpi" name="KPI Score (%)" fill="#10b981" radius={[8, 8, 0, 0]} barSize={25} />
+                  <Bar yAxisId="left" dataKey="quality" name="Quality Score (%)" fill="#ff00ff" radius={[8, 8, 0, 0]} barSize={25} />
                 </BarChart>
               </ResponsiveContainer>
+              {chartData.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-navy-surface/50 backdrop-blur-sm">
+                  <p className="text-slate-400 font-bold">ไม่พบข้อมูลงาน/กิจกรรมในช่วงเวลาที่เลือก</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -739,8 +771,22 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(255,255,255,0.05)" />
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 14, fill: '#ffffff', fontWeight: 'bold' }} width={120} />
-                    <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '20px', color: '#fff' }} />
-                    <Bar dataKey="active" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24}>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#0f172a', 
+                        border: '1px solid #1e293b', 
+                        borderRadius: '16px', 
+                        color: '#fff',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }} 
+                      itemStyle={{ fontWeight: 'bold' }}
+                      formatter={(value: any, name: string) => {
+                        if (name === "active") return [value, "งานที่กำลังทำ"];
+                        if (name === "completed") return [value, "งานที่เสร็จสิ้น"];
+                        return [value, name];
+                      }}
+                    />
+                    <Bar dataKey="active" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24} name="active">
                       <LabelList
                         dataKey="active"
                         position="right"
@@ -748,6 +794,7 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
                         formatter={(v: number) => v > 0 ? v : ''}
                       />
                     </Bar>
+                    <Bar dataKey="completed" fill="#10b981" radius={[0, 10, 10, 0]} barSize={24} name="completed" hide />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -823,16 +870,16 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
             <div className="bg-navy-surface p-10 rounded-[3rem] border border-border-navy shadow-2xl shadow-black/50 relative overflow-hidden">
               <div className="flex items-center justify-between mb-10">
                 <div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">วิเคราะห์ความเสี่ยงรายโครงการ</h3>
-                  <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">สัดส่วนงานที่มีความเสี่ยงสูง</p>
+                  <h3 className="text-xl font-bold text-white tracking-tight">วิเคราะห์ความเสี่ยงรายภารกิจ</h3>
+                  <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">สัดส่วนงานที่มีความเสี่ยงสูงแยกตามกิจกรรม</p>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20">
                   <ShieldAlert size={20} />
                 </div>
               </div>
               <div className="space-y-6">
-                {projectData.slice(0, 5).map((project, idx) => {
-                  const riskTasks = filteredTasks.filter(t => t.project === project.name && (t.delayProbability || 0) > 50).length;
+                {projectData.map((project, idx) => {
+                  const riskTasks = filteredTasks.filter(t => (t.title || 'ไม่ระบุชื่อภารกิจ') === project.name && (t.delayProbability || 0) > 50).length;
                   const riskPercent = project.count > 0 ? Math.round((riskTasks / project.count) * 100) : 0;
                   
                   return (

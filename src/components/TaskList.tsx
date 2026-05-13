@@ -1758,13 +1758,13 @@ export function TaskList({ tasks, teamMembers, taskOwners, departments, userProf
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">ผลการดำเนินงาน</label>
+                <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">โครงการ/งาน (ที่จะแสดงในกราฟวิเคราะห์)</label>
                 <input 
                   type="text" 
                   value={project}
                   onChange={(e) => setProject(e.target.value)}
                   className="w-full bg-navy-input border border-border-navy rounded-2xl p-5 text-white outline-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary transition-all placeholder:text-slate-600 font-medium shadow-inner"
-                  placeholder="ระบุผลการดำเนินงาน..."
+                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
                   required
                 />
               </div>

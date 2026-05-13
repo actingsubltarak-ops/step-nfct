@@ -936,7 +936,19 @@ export function Calendar({ tasks, teamMembers, taskOwners, departments, userProf
             
             <form id="add-task-form" onSubmit={handleAddTask} className="flex-1 overflow-y-auto scrollbar-hide p-8 space-y-6 text-[#fafafa]">
               <div className="space-y-2">
-                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">งาน/กิจกรรม/โครงการ</label>
+                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">โครงการ/งาน</label>
+                <input 
+                  type="text" 
+                  value={project}
+                  onChange={(e) => setProject(e.target.value)}
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-2xl p-4 text-white outline-none focus:border-blue-500 transition-all placeholder:text-[#3f3f46]"
+                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">กิจกรรม/งานที่รับผิดชอบ</label>
                 <input 
                   autoFocus
                   type="text" 
@@ -1105,17 +1117,7 @@ export function Calendar({ tasks, teamMembers, taskOwners, departments, userProf
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] text-[#a1a1aa] uppercase font-bold tracking-widest">โครงการ/งานที่รับผิดชอบ</label>
-                <input 
-                  type="text" 
-                  value={project}
-                  onChange={(e) => setProject(e.target.value)}
-                  className="w-full bg-[#09090b] border border-[#27272a] rounded-2xl p-4 text-white outline-none focus:border-blue-500 transition-all placeholder:text-[#3f3f46]"
-                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
-                  required
-                />
-              </div>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

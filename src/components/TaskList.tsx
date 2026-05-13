@@ -1466,8 +1466,20 @@ export function TaskList({ tasks, teamMembers, taskOwners, departments, userProf
             
             <form id="edit-task-form" onSubmit={handleUpdateTask} className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-8 text-white">
               <div className="space-y-3">
+                <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">โครงการ/งาน</label>
+                <input 
+                  type="text" 
+                  value={project}
+                  onChange={(e) => setProject(e.target.value)}
+                  className="w-full bg-navy-input border border-border-navy rounded-2xl p-5 text-white outline-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary transition-all placeholder:text-slate-600 font-medium shadow-inner"
+                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
+                  required
+                />
+              </div>
+
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">งาน/กิจกรรม/โครงการ</label>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">กิจกรรม/งานที่รับผิดชอบ</label>
                     <div className="flex items-center gap-2">
                       <button 
                         type="button"
@@ -1755,18 +1767,6 @@ export function TaskList({ tasks, teamMembers, taskOwners, departments, userProf
                     <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none group-hover:text-brand-primary transition-colors" size={18} />
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">โครงการ/งาน (ที่จะแสดงในกราฟวิเคราะห์)</label>
-                <input 
-                  type="text" 
-                  value={project}
-                  onChange={(e) => setProject(e.target.value)}
-                  className="w-full bg-navy-input border border-border-navy rounded-2xl p-5 text-white outline-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary transition-all placeholder:text-slate-600 font-medium shadow-inner"
-                  placeholder="ระบุชื่อโครงการ หรือ งานหลัก..."
-                  required
-                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

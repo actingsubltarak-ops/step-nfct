@@ -230,10 +230,18 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
   const COLORS = React.useMemo(() => pieData.length > 0 ? pieData.map(d => d.color) : ['#3b82f6'], [pieData]);
 
   const projectData = React.useMemo(() => {
-    // Change grouping from project to title (งาน/กิจกรรม/โครงการ)
-    const projectNames = Array.from(new Set(filteredTasks.map(t => t.title || 'ไม่ระบุชื่อภารกิจ')));
-    const data = projectNames.map(projectName => {
-      const projectTasks = filteredTasks.filter(t => (t.title || 'ไม่ระบุชื่อภารกิจ') === projectName);
+    // Use 'project' field as primary grouping (as per Request 6 label), fallback to 'title' (งาน/กิจกรรม/โครงการ)
+    const projectNames = Array.from(new Set(filteredTasks.map(t => {
+      const p = (t.project || '').trim();
+      return p !== '' ? p : (t.title || 'ไม่ระบุชื่อภารกิจ');
+    })));
+    
+    const data = projectNames.map(name => {
+      const projectTasks = filteredTasks.filter(t => {
+        const p = (t.project || '').trim();
+        const effectiveName = p !== '' ? p : (t.title || 'ไม่ระบุชื่อภารกิจ');
+        return effectiveName === name;
+      });
       
       // Accuracy Fix: Only average scores for tasks that actually HAVE scores
       const kpiTasks = projectTasks.filter(t => t.kpiScore !== undefined && typeof t.kpiScore === 'number');
@@ -248,7 +256,7 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
         : 0;
 
       return {
-        name: projectName,
+        name: name,
         count: projectTasks.length,
         kpi: avgKpi,
         quality: avgQuality
@@ -539,8 +547,8 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
           <div className="bg-navy-surface p-10 rounded-[3rem] border border-border-navy shadow-2xl shadow-black/50">
             <div className="flex items-center justify-between mb-10">
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">ผลการวิเคราะห์รายภารกิจ/โครงการ</h3>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">เปรียบเทียบ KPI และ Quality Score แยกตามงาน/กิจกรรม/โครงการ</p>
+                <h3 className="text-xl font-bold text-white tracking-tight">ผลการวิเคราะห์รายโครงการ/งาน</h3>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">เปรียบเทียบ KPI และ Quality Score แยกตามกิจกรรม/งานที่รับผิดชอบ</p>
               </div>
             </div>
               <div className="h-[400px] min-h-[400px] w-full">
@@ -879,7 +887,11 @@ export function Dashboard({ tasks, teamMembers, userProfile, onViewReports }: Da
               </div>
               <div className="space-y-6">
                 {projectData.map((project, idx) => {
-                  const riskTasks = filteredTasks.filter(t => (t.title || 'ไม่ระบุชื่อภารกิจ') === project.name && (t.delayProbability || 0) > 50).length;
+                  const riskTasks = filteredTasks.filter(t => {
+                    const p = (t.project || '').trim();
+                    const effectiveName = p !== '' ? p : (t.title || 'ไม่ระบุชื่อภารกิจ');
+                    return effectiveName === project.name && (t.delayProbability || 0) > 50;
+                  }).length;
                   const riskPercent = project.count > 0 ? Math.round((riskTasks / project.count) * 100) : 0;
                   
                   return (

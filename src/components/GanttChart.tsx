@@ -39,6 +39,7 @@ type ViewScale = 'day' | 'week' | 'month' | 'year';
 export function GanttChart({ tasks, teamMembers, updateTask }: GanttChartProps) {
   const [scale, setScale] = useState<ViewScale>('week');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
   const today = startOfToday();
   
   const processedTasks = useMemo((): ProcessedTask[] => {
@@ -298,15 +299,32 @@ export function GanttChart({ tasks, teamMembers, updateTask }: GanttChartProps) 
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border-navy">
               {processedTasks.map((task, idx) => (
-                <div key={task.id} className="h-14 flex items-center hover:bg-navy-elevated transition-colors group">
+                <div 
+                  key={task.id} 
+                  className="h-14 flex items-center hover:bg-navy-elevated transition-colors group relative"
+                  onMouseEnter={() => setHoveredTaskId(task.id)}
+                  onMouseLeave={() => setHoveredTaskId(null)}
+                >
                   <div className="w-12 shrink-0 px-2 text-xs font-black text-slate-600 text-center font-mono">{idx + 1}</div>
-                  <div className="flex-1 px-4 min-w-0">
+                  <div className="flex-1 px-4 min-w-0 relative">
                     <div className="flex items-center gap-3">
                       <p className="text-sm font-black text-white truncate group-hover:text-brand-primary transition-colors">{task.title}</p>
                       {getTaskOverload(task) && (
                         <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-sm shadow-rose-500/20" title="Resource Overload" />
                       )}
                     </div>
+                    {/* Project Name Tooltip on Hover */}
+                    {hoveredTaskId === task.id && task.project && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="absolute left-4 top-full mt-1 z-[100] bg-navy-elevated border-2 border-brand-primary p-3 rounded-xl shadow-2xl min-w-[200px] pointer-events-none"
+                      >
+                         <p className="text-[10px] text-brand-primary font-black uppercase tracking-widest mb-1">โครงการ / ภารกิจหลัก</p>
+                         <p className="text-sm text-white font-black leading-tight">{task.project}</p>
+                         <div className="absolute -top-1.5 left-6 w-3 h-3 bg-navy-elevated border-l-2 border-t-2 border-brand-primary rotate-45" />
+                      </motion.div>
+                    )}
                   </div>
                   <div className="w-20 shrink-0 px-2 flex justify-center">
                     <div className="flex -space-x-2">

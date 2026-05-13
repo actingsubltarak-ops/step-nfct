@@ -957,7 +957,7 @@ function StatusCard({ label, value, color }: { label: string, value: number, col
   const textColorClass = color.split(' ').find(c => c.startsWith('text-')) || '';
   
   return (
-    <div className={cn("p-10 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center gap-6 transition-all hover:scale-105 shadow-2xl bg-navy-surface/50 backdrop-blur-xl relative overflow-hidden group", textColorClass)}>
+    <div className={cn("p-10 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center gap-6 transition-all hover:scale-105 hover:border-brand-primary/60 shadow-2xl bg-navy-surface/50 backdrop-blur-xl relative overflow-hidden group", textColorClass)}>
       <p className="text-sm font-black uppercase tracking-widest text-white transition-colors leading-none group-hover:text-current">{label}</p>
       <p className="text-8xl font-black tracking-tighter drop-shadow-[0_4px_30px_rgba(255,255,255,0.1)] text-white group-hover:scale-110 transition-transform leading-none group-hover:text-current">{value}</p>
       <div className={cn("absolute bottom-0 left-0 right-0 h-1.5 opacity-30", color)} />

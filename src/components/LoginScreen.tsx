@@ -293,19 +293,41 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
         if (manualData.jobTitle) setJobTitle(manualData.jobTitle);
         if (manualData.role) setRole(manualData.role);
         
-        // Map department and owner
+        // --- SMART MAPPING FOR DROPDOWNS ---
+        // On mobile, mismatched values cause dropdowns to fail/reset.
+        
+        // 1. Map Department (Dropdown expects NAME string)
         if (manualData.department) {
-          setDepartment(manualData.department);
-          console.log("[Registration] Auto-set department:", manualData.department);
+          const deptMatch = departments.find(d => 
+            d.id === manualData.department || 
+            d.name === manualData.department ||
+            (typeof manualData.department === 'string' && d.name.includes(manualData.department))
+          );
+          if (deptMatch) {
+            setDepartment(deptMatch.name);
+            console.log("[Registration] Auto-set department (mapped):", deptMatch.name);
+          } else {
+            setDepartment(manualData.department);
+          }
         }
         
+        // 2. Map OwnerID (Dropdown expects ID string)
         if (manualData.ownerId) {
-          setOwnerId(manualData.ownerId);
-          console.log("[Registration] Auto-set ownerId:", manualData.ownerId);
+          const ownerMatch = taskOwners.find(o => 
+            o.id === manualData.ownerId || 
+            o.name === manualData.ownerId ||
+            (typeof manualData.ownerId === 'string' && o.name.includes(manualData.ownerId))
+          );
+          if (ownerMatch) {
+            setOwnerId(ownerMatch.id);
+            console.log("[Registration] Auto-set ownerId (mapped):", ownerMatch.id);
+          } else {
+            setOwnerId(manualData.ownerId);
+          }
         }
 
-        toast.success(`พบข้อมูลของคุณในระบบแล้ว (${manualData.name})`, {
-          description: 'ระบบเตรียมข้อมูลตำแหน่งและหน่วยงานให้คุณเรียบร้อยแล้ว'
+        toast.success(`พบข้อมูลพรีโปรไฟล์ในระบบ (${manualData.name})`, {
+          description: 'เราได้เตรียมข้อมูลตำแหน่งและหน่วยงานให้คุณเรียบร้อยแล้ว'
         });
       } else {
         console.log("[Registration] No manual profile entry found for:", cleanedEmail);
@@ -776,7 +798,13 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
               </div>
 
               <div className="space-y-4">
-                <form id="registerForm" onSubmit={handleRegister} noValidate className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <form id="registerForm" onSubmit={handleRegister} noValidate autoComplete="off" className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {/* Invisible decoy fields to distract mobile autofill */}
+                  <div className="sr-only" aria-hidden="true" style={{ position: 'absolute', opacity: 0, height: 0, overflow: 'hidden' }}>
+                    <input type="text" name={`reg_user_${formId}`} tabIndex={-1} autoComplete="off" />
+                    <input type="password" name={`reg_pass_${formId}`} tabIndex={-1} autoComplete="off" />
+                  </div>
+
                   <div className="space-y-4 pb-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-1">
@@ -838,36 +866,46 @@ export function LoginScreen({ departments, taskOwners }: LoginScreenProps) {
                       />
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">หน่วยงาน / สำนัก</label>
-                        <select
-                          value={department}
-                          onChange={(e) => setDepartment(e.target.value)}
-                          className="w-full px-4 py-3 bg-navy-base border border-border-navy rounded-xl text-white focus:border-blue-500 outline-none cursor-pointer"
-                        >
-                          <option value="">เลือกหน่วยงาน...</option>
-                          {departments && departments.length > 0 ? (
-                            departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
-                          ) : (
-                            <option value="สำนักบริหารกลาง">สำนักบริหารกลาง (ค่าเริ่มต้น)</option>
-                          )}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={department}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            className="w-full px-4 py-3 bg-navy-base border border-border-navy rounded-xl text-white focus:border-blue-500 outline-none cursor-pointer appearance-none pr-10"
+                          >
+                            <option value="" disabled className="text-slate-600">-- เลือกหน่วยงาน --</option>
+                            {departments && departments.length > 0 ? (
+                              departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                            ) : (
+                              <option value="" disabled>กำลังโหลดข้อมูลหน่วยงาน...</option>
+                            )}
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                             <ChevronRight className="w-4 h-4 rotate-90" />
+                          </div>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">ส่วนงาน</label>
-                        <select
-                          value={ownerId}
-                          onChange={(e) => setOwnerId(e.target.value)}
-                          className="w-full px-4 py-3 bg-navy-base border border-border-navy rounded-xl text-white focus:border-blue-500 outline-none cursor-pointer"
-                        >
-                          <option value="">เลือกส่วนงาน...</option>
-                          {taskOwners && taskOwners.length > 0 ? (
-                            taskOwners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)
-                          ) : (
-                            <option value="default-owner">ส่วนสารสนเทศ (ค่าเริ่มต้น)</option>
-                          )}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={ownerId}
+                            onChange={(e) => setOwnerId(e.target.value)}
+                            className="w-full px-4 py-3 bg-navy-base border border-border-navy rounded-xl text-white focus:border-blue-500 outline-none cursor-pointer appearance-none pr-10"
+                          >
+                            <option value="" disabled className="text-slate-600">-- เลือกส่วนงาน --</option>
+                            {taskOwners && taskOwners.length > 0 ? (
+                              taskOwners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)
+                            ) : (
+                              <option value="" disabled>กำลังโหลดข้อมูลส่วนงาน...</option>
+                            )}
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                             <ChevronRight className="w-4 h-4 rotate-90" />
+                          </div>
+                        </div>
                       </div>
                     </div>
 

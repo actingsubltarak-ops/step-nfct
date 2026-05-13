@@ -12,7 +12,8 @@ import {
   deleteDoc, 
   writeBatch, 
   limit, 
-  Timestamp
+  Timestamp,
+  onSnapshot
 } from '../firebase';
 import { TeamMember } from '../types';
 import { getDoc, DocumentReference } from 'firebase/firestore';
@@ -183,11 +184,33 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let profileUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      // Clear previous profile listener if any
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+        profileUnsubscribe = null;
+      }
+
       try {
         if (currentUser) {
-          const profile = await initializeUserProfile(currentUser);
-          setUserProfile(profile);
+          // 1. Initial setup (ensure doc exists, handle manual/auth merger)
+          // This only runs once per sign-in to handle new users or merges
+          await initializeUserProfile(currentUser);
+
+          // 2. Set up real-time listener for the user profile
+          const userRef = doc(db, 'users', currentUser.uid) as DocumentReference<TeamMember>;
+          profileUnsubscribe = onSnapshot(userRef, (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              setUserProfile(data);
+            } else {
+              setUserProfile(null);
+            }
+          }, (error) => {
+            console.error("Profile snapshot error:", error);
+          });
         } else {
           setUserProfile(null);
         }
@@ -199,7 +222,10 @@ export function useAuth() {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
   }, []);
 
   return { user, userProfile, loading };

@@ -15,7 +15,7 @@ import {
   browserLocalPersistence,
   setPersistence
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDocFromServer, writeBatch, runTransaction, getDocs, collection, query, where, updateDoc, deleteDoc, orderBy, limit, Timestamp, arrayUnion } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDocFromServer, writeBatch, runTransaction, getDocs, collection, query, where, updateDoc, deleteDoc, orderBy, limit, Timestamp, arrayUnion, onSnapshot } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
@@ -219,7 +219,8 @@ export {
   orderBy,
   limit,
   Timestamp,
-  arrayUnion
+  arrayUnion,
+  onSnapshot
 };
 
 // Firestore Error Handling

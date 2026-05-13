@@ -108,6 +108,7 @@ export function MasterData({ teamMembers, userProfile, initialSubTab = 'team' }:
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const collectionName = activeSubTab === 'team' ? 'users' : (activeSubTab === 'owners' ? 'taskOwners' : 'departments');
       if (activeSubTab === 'team') {
         const cleanedEmail = email.trim().toLowerCase();
         // Use email as ID for new manual users, or use existing ID if editing
@@ -163,18 +164,19 @@ export function MasterData({ teamMembers, userProfile, initialSubTab = 'team' }:
       }
       resetForm();
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, activeSubTab);
+      const collectionName = activeSubTab === 'team' ? 'users' : (activeSubTab === 'owners' ? 'taskOwners' : 'departments');
+      handleFirestoreError(error, OperationType.WRITE, collectionName);
     }
   };
 
   const handleDelete = async (id: string) => {
+    const collectionName = activeSubTab === 'team' ? 'users' : (activeSubTab === 'owners' ? 'taskOwners' : 'departments');
     try {
-      const collectionName = activeSubTab === 'team' ? 'users' : (activeSubTab === 'owners' ? 'taskOwners' : 'departments');
       await deleteDoc(doc(db, collectionName, id));
       setConfirmDelete(null);
       toast.success('ลบข้อมูลสำเร็จ');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, activeSubTab);
+      handleFirestoreError(error, OperationType.DELETE, collectionName);
     }
   };
 

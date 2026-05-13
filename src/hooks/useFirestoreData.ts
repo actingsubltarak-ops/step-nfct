@@ -83,7 +83,7 @@ export function useFirestoreData(user: FirebaseUser | null, userProfile?: TeamMe
       unsubscribeDepts();
       unsubscribeNotifications();
     };
-  }, [user?.uid]);
+  }, [user?.uid, userProfile?.status]);
 
   return { tasks, teamMembers, taskOwners, departments, notifications };
 }

@@ -259,40 +259,40 @@ export function Home({ tasks, teamMembers, userProfile, onViewReports }: HomePro
 
             {/* Sub-metrics Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Progress Bars Stack */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-[#0c0f1a]/60 p-10 rounded-[3rem] border border-white/10 h-full backdrop-blur-xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] relative group/progress">
-                <HorizontalProgress 
-                  label="ปริมาณงานทั้งหมด" 
-                  value={100} 
-                  rawCount={totalTasks} 
-                  icon={<Briefcase size={20} />} 
-                  color="from-orange-600 via-orange-500 to-orange-300" 
-                />
-                <HorizontalProgress 
-                  label="งานที่เสร็จสิ้นแล้ว" 
-                  value={progress} 
-                  rawCount={completedTasks} 
-                  icon={<CheckCircle2 size={20} />} 
-                  color="from-emerald-600 via-emerald-500 to-emerald-300" 
-                />
-                <HorizontalProgress 
-                  label="สัดส่วนงานที่ยังไม่เสร็จ" 
-                  value={100 - progress} 
-                  rawCount={totalTasks - completedTasks} 
-                  icon={<Clock size={20} />} 
-                  color="from-blue-600 via-blue-500 to-blue-300" 
-                />
-                <HorizontalProgress 
-                  label="บุคลากรที่มีส่วนร่วม" 
-                  value={engagedStaff} 
-                  rawCount={teamMembers.filter(m => tasks.some(t => t.assigneeId === m.id || (t.assigneeIds && t.assigneeIds.includes(m.id)))).length} 
-                  icon={<Users size={20} />} 
-                  color="from-indigo-600 via-indigo-500 to-indigo-300" 
-                />
-                
-                {/* Decorative glow for the container */}
-                <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none group-hover/progress:border-blue-500/20 transition-colors" />
-              </div>
+            {/* Progress/Stat Grid: Strategic KPIs */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 bg-[#0c0f1a]/40 p-6 rounded-[2.5rem] border border-white/5 h-full backdrop-blur-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] relative group/progress">
+              <HorizontalProgress 
+                label="ปริมาณงานทั้งหมด" 
+                value={100} 
+                rawCount={totalTasks} 
+                color="bg-orange-500" 
+                glowColor="shadow-orange-500/40"
+              />
+              <HorizontalProgress 
+                label="งานที่เสร็จสิ้นแล้ว" 
+                value={progress} 
+                rawCount={completedTasks} 
+                color="bg-emerald-500" 
+                glowColor="shadow-emerald-500/40"
+              />
+              <HorizontalProgress 
+                label="งานที่รอดำเนินการ" 
+                value={100 - progress} 
+                rawCount={totalTasks - completedTasks} 
+                color="bg-blue-500" 
+                glowColor="shadow-blue-500/40"
+              />
+              <HorizontalProgress 
+                label="ทีมงานมีส่วนร่วม" 
+                value={engagedStaff} 
+                rawCount={teamMembers.filter(m => tasks.some(t => t.assigneeId === m.id || (t.assigneeIds && t.assigneeIds.includes(m.id)))).length} 
+                color="bg-indigo-500" 
+                glowColor="shadow-indigo-500/40"
+              />
+              
+              {/* Decorative glow for the container */}
+              <div className="absolute inset-0 rounded-[2.5rem] border border-white/5 pointer-events-none group-hover/progress:border-blue-500/10 transition-colors" />
+            </div>
 
               {/* Stat Cards 2x2 Grid */}
               <div className="grid grid-cols-2 gap-5">
@@ -526,50 +526,43 @@ function CircularGauge({ value }: { value: number }) {
   );
 }
 
-function HorizontalProgress({ label, value, rawCount, icon, color }: { label: string, value: number, rawCount?: number | string, icon: React.ReactNode, color: string }) {
+function HorizontalProgress({ label, value, rawCount, color, glowColor }: { label: string, value: number, rawCount?: number | string, color: string, glowColor: string }) {
   return (
-    <div className="space-y-5 group">
-      <div className="flex flex-col gap-2">
+    <div className="space-y-4 group/item max-w-[180px] mx-auto">
+      <div className="flex flex-col gap-1 items-start">
         {rawCount !== undefined && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-6xl font-black text-white tracking-tighter drop-shadow-[0_4px_15px_rgba(255,255,255,0.15)] group-hover:scale-110 transition-transform origin-left duration-500">
+          <div className="flex items-baseline gap-1">
+            <span className="text-5xl font-black text-white tracking-tighter drop-shadow-[0_4px_10px_rgba(255,255,255,0.1)] group-hover/item:scale-105 transition-transform origin-left duration-300">
               {rawCount}
             </span>
           </div>
         )}
-        <div className="flex items-center gap-2.5 text-sm font-black text-zinc-400 uppercase tracking-[0.15em]">
-          <div className="p-3 rounded-xl bg-black/40 border border-white/15 group-hover:text-white group-hover:border-white/30 transition-all shadow-inner">
-            {icon}
-          </div>
-          <span className="group-hover:text-zinc-200 transition-colors drop-shadow-sm">{label}</span>
+        <div className="flex items-center gap-2 mt-1">
+          <div className={cn("w-2 h-2 rounded-full", color.replace('bg-', 'bg-'), "shadow-[0_0_8px_currentColor]", color.replace('bg-', 'text-'))} />
+          <span className="text-[12px] font-black text-white truncate tracking-normal drop-shadow-sm">{label}</span>
         </div>
       </div>
       
-      <div className="relative">
-        {/* Background track */}
-        <div className="h-6 bg-zinc-900/80 border border-white/5 rounded-2xl overflow-hidden p-1 shadow-inner backdrop-blur-sm">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${value}%` }}
-            transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
-            className={cn("h-full rounded-xl bg-gradient-to-r shadow-2xl relative group-hover:brightness-110 transition-all", color)} 
-          >
-             {/* Internal highlight for polish */}
-             <div className="absolute inset-x-0 top-0 h-1/2 bg-white/20 rounded-t-xl" />
-             
-             {/* Animated glare effect */}
-             <motion.div 
-               animate={{ x: ['-200%', '300%'] }}
-               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-               className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
-             />
-          </motion.div>
-        </div>
-        
-        {/* Percentage Indicator */}
-        <div className="absolute -right-2 -top-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[10px] font-black text-white/50">{value}%</span>
-        </div>
+      {/* Pip-style indicators */}
+      <div className="flex gap-1.5 mt-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => {
+          const threshold = (i / 6) * 100;
+          const isActive = value >= (threshold - 5); // Slight buffer
+          return (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className={cn(
+                "h-2.5 w-4 rounded-[4px] transition-all duration-500",
+                isActive 
+                  ? cn(color, glowColor, "opacity-100 shadow-[0_0_12px_rgba(0,0,0,0.5)]") 
+                  : "bg-white/5 shadow-inner"
+              )}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -642,22 +635,23 @@ function MiniStatCard({ label, title, trend = "+2.4%" }: { label: string, title:
 
 function StatWidget({ label, value, icon, color, borderColor }: { label: string, value: number, icon: React.ReactNode, color: string, borderColor: string }) {
   return (
-    <div className={cn("p-8 md:p-10 rounded-[3rem] border shadow-2xl shadow-black/40 flex flex-col items-center justify-center bg-[#0c0f1a]/80 backdrop-blur-xl hover:border-brand-primary transition-all group active:scale-[0.98] relative overflow-hidden", borderColor.replace('border-', 'border-white/10 hover:border-'))}>
-      <div className="flex items-center gap-6 md:gap-10 mb-8 relative z-10 w-full justify-between px-4">
-        <div className={cn("w-20 h-20 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-500 shadow-xl border border-white/5", color)}>
-          <div className="scale-[1.4] md:scale-[1.8] drop-shadow-lg">
+    <div className={cn("p-6 md:p-8 rounded-[2.5rem] border shadow-2xl shadow-black/40 flex flex-col items-center justify-center bg-[#0c0f1a]/80 backdrop-blur-xl hover:border-brand-primary transition-all group active:scale-[0.98] relative overflow-hidden", borderColor.replace('border-', 'border-white/10 hover:border-'))}>
+      <div className="flex items-center gap-4 md:gap-8 mb-4 relative z-10 w-full justify-between px-2">
+        <div className={cn("w-16 h-16 md:w-20 md:h-20 rounded-[1.5rem] flex items-center justify-center shrink-0 group-hover:scale-110 transition-all duration-500 shadow-xl border border-white/5", color)}>
+          <div className="scale-[1.2] md:scale-[1.5] drop-shadow-lg">
             {icon}
           </div>
         </div>
-        <p className="text-7xl md:text-8xl font-black text-white tracking-tighter leading-none drop-shadow-[0_4px_30px_rgba(255,255,255,0.1)]">{value}</p>
+        <p className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-none drop-shadow-[0_4px_30px_rgba(255,255,255,0.1)]">{value}</p>
       </div>
-      <div className="text-center relative z-10">
-        <p className="text-sm md:text-lg font-black text-white uppercase tracking-[0.3em] opacity-50 group-hover:opacity-100 transition-opacity">{label}</p>
+      <div className="text-center relative z-10 w-full">
+        <div className="h-px w-full bg-white/5 mb-4 opacity-50" />
+        <p className="text-xs md:text-sm font-black text-white uppercase tracking-[0.25em] opacity-80 group-hover:opacity-100 transition-opacity">{label}</p>
       </div>
       
       {/* Gloss reflection */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-      <div className={cn("absolute bottom-0 left-0 right-0 h-2 opacity-60 bg-gradient-to-r from-transparent via-current to-transparent", color.replace('bg-', 'text-'))} />
+      <div className={cn("absolute bottom-0 left-0 right-0 h-1.5 opacity-60 bg-gradient-to-r from-transparent via-current to-transparent", color.replace('bg-', 'text-'))} />
     </div>
   );
 }

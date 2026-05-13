@@ -148,9 +148,10 @@ export function ResourceWorkload({ tasks, teamMembers }: ResourceWorkloadProps) 
               Active Tasks
             </div>
           </div>
-          <div className="h-auto min-h-[120px]">
-            <ResponsiveContainer width="100%" height={Math.max(120, chartData.length * 48)} minWidth={0} minHeight={0} debounce={50}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 60 }}>
+          <div className="min-h-[300px] w-full">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 54)}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 60, top: 10, bottom: 10 }}>
                 <defs>
                   <linearGradient id="barGradientBlue" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
@@ -208,6 +209,14 @@ export function ResourceWorkload({ tasks, teamMembers }: ResourceWorkloadProps) 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[300px] text-center space-y-4">
+                <div className="w-16 h-16 bg-slate-500/10 rounded-full flex items-center justify-center text-slate-500">
+                  <Users size={32} />
+                </div>
+                <p className="text-slate-500 font-bold">ไม่พบข้อมูลภาระงานที่กำลังดำเนินการ</p>
+              </div>
+            )}
           </div>
         </div>
 

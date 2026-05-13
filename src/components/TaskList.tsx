@@ -44,9 +44,16 @@ import {
 import { format, parseISO, differenceInDays, isValid } from 'date-fns';
 import { th } from 'date-fns/locale';
 
-function getDueDateStyle(endDate: string) {
+function getDueDateStyle(endDate: string, status?: string) {
   if (!endDate) return 'text-slate-400';
-  const days = differenceInDays(parseISO(endDate), new Date());
+  if (status === 'Completed') return 'text-emerald-400 font-bold';
+  
+  const end = parseISO(endDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // start of today
+  
+  const days = differenceInDays(end, today);
+  
   if (days < 0)  return 'text-red-400 font-bold';   // overdue
   if (days <= 3) return 'text-orange-400 font-bold'; // urgent
   if (days <= 7) return 'text-yellow-400';            // warning
@@ -604,8 +611,8 @@ export function TaskList({ tasks, teamMembers, taskOwners, departments, userProf
                         label="กำหนดส่ง" 
                         value={
                           <span className="flex items-center gap-1">
-                            <span className={getDueDateStyle(task.endDate)}>{formatThaiDate(task.endDate)}</span>
-                            {task.endDate && differenceInDays(parseISO(task.endDate), new Date()) < 0 && (
+                            <span className={getDueDateStyle(task.endDate, task.status)}>{formatThaiDate(task.endDate)}</span>
+                            {task.endDate && task.status !== 'Completed' && differenceInDays(parseISO(task.endDate), new Date().setHours(0,0,0,0)) < 0 && (
                               <span className="text-xs text-red-400 font-black ml-1">⚠ เกินกำหนด</span>
                             )}
                           </span>
@@ -914,8 +921,8 @@ export function TaskList({ tasks, teamMembers, taskOwners, departments, userProf
                                       <div className="flex items-center justify-between mt-1">
                                         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
                                           <CalendarIcon size={10} className="text-brand-primary/50" />
-                                          <span className={getDueDateStyle(task.endDate)}>{formatThaiDate(task.endDate)}</span>
-                                          {task.endDate && differenceInDays(parseISO(task.endDate), new Date()) < 0 && (
+                                          <span className={getDueDateStyle(task.endDate, task.status)}>{formatThaiDate(task.endDate)}</span>
+                                          {task.endDate && task.status !== 'Completed' && differenceInDays(parseISO(task.endDate), new Date().setHours(0,0,0,0)) < 0 && (
                                             <span className="text-[8px] text-red-400 font-black">⚠ เกินกำหนด</span>
                                           )}
                                         </div>

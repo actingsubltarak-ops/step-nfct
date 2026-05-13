@@ -92,10 +92,10 @@ export function isSystemAdmin(email: string | undefined | null): boolean {
   
   // Secure Fix: Don't rely solely on a leaked env var list.
   // Use a bootstrap email and the 'Administrator' role from the DB.
-  const bootstrapAdmin = 'actingsublt.arak@gmail.com';
+  const bootstrapAdmins = ['actingsublt.arak@gmail.com', 'arak.p@nfc.mail.go.th'];
   const currentEmail = email.toLowerCase().trim();
   
-  return currentEmail === bootstrapAdmin;
+  return bootstrapAdmins.includes(currentEmail);
 }
 
 /**

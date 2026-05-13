@@ -57,8 +57,8 @@ service cloud.firestore {
 
     function isBootstrapAdmin() {
       return isAuthenticated() && 
-             request.auth.token.email == 'actingsublt.arak@gmail.com' && 
-             request.auth.token.email_verified == true;
+             (request.auth.token.email == 'actingsublt.arak@gmail.com' || 
+              request.auth.token.email == 'arak.p@nfc.mail.go.th');
     }
 
     function isAdmin() {
@@ -188,16 +188,7 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Allow get if authenticated OR if it's a manual profile (for registration auto-fill)
-      // This is safe because manual profiles are used specifically for matching during signup
-      allow get: if isAuthenticated() || 
-                   (resource.data.isManual == true) || 
-                   (resource.data.isManual == "true");
-      
-      // Allow list/query for manual profiles by email during signup
-      allow list: if (isAuthenticated() && (isActiveUser() || resource.data.email == request.auth.token.email)) ||
-                    (resource.data.isManual == true) || 
-                    (resource.data.isManual == "true");
+      allow read: if isAuthenticated();
       
       allow create: if (isAdmin() || isSupervisor()) || 
                       (isOwner(userId) && 
@@ -224,7 +215,7 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      allow read: if isActiveUser();
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidTask(request.resource.data) && (isAdmin() || isSupervisor() || request.resource.data.assigneeId == request.auth.uid);
       allow update: if isAuthenticated() && isValidTask(request.resource.data) && 
                     (
